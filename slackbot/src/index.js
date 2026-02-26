@@ -49,7 +49,7 @@ When the user types any of these skills, execute the corresponding workflow auto
 
 /save [post text] — Ask for brand, post type, metrics, why it worked, save reason. Call save_post_to_notion. Confirm saved.
 
-/schedule [post text] — Confirm copy with user, ask about timing, call create_typefully_draft. Confirm draft created.
+/schedule [post text] — Call create_typefully_draft immediately with the post text. Do not ask for confirmation or timing. Add to queue (no schedule_date). Confirm draft created.
 
 /queue — Call get_typefully_scheduled. Display in chronological order.
 
@@ -132,7 +132,6 @@ function buildPromptFromCommand(command, text) {
     case '/draft':     return `/draft ${t}`
     case '/save':      return t ? `/save ${t}` : '/save'
     case '/schedule':  return t ? `/schedule ${t}` : '/schedule'
-    case '/queue':     return '/queue'
     case '/skills':    return '/skills'
     default:           return t || command
   }
@@ -178,7 +177,7 @@ const app = new App({
 })
 
 // Slash commands
-const COMMANDS = ['/morning', '/audit', '/draft', '/save', '/schedule', '/queue', '/skills']
+const COMMANDS = ['/morning', '/audit', '/draft', '/save', '/schedule', '/skills']
 
 for (const command of COMMANDS) {
   app.command(command, async ({ command: cmd, ack, client }) => {
