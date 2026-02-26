@@ -494,6 +494,7 @@ const sessions = new Map()
 app.all('/mcp', async (req, res) => {
   try {
     const sessionId = req.headers['mcp-session-id']
+    console.log(`[mcp] ${req.method} session=${sessionId || 'none'} body=${JSON.stringify(req.body)?.slice(0, 100)}`)
 
     if (sessionId && sessions.has(sessionId)) {
       await sessions.get(sessionId).handleRequest(req, res, req.body)
