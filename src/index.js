@@ -14,12 +14,15 @@ import { buildBrandContext, getBrandProfile, getSavedPosts, savePost } from './n
 import { createTypefullyDraft, getTypefullyScheduled, getTypefullyPublished } from './typefully.js'
 import { getUserPosts, searchPosts, getPostMetrics, getUSTrends } from './x.js'
 
-// ─── Server ───────────────────────────────────────────────────────────────────
+// ─── Server Factory ───────────────────────────────────────────────────────────
+// A fresh Server instance must be created per connection — the MCP SDK does not
+// support connecting a single Server to multiple transports simultaneously.
 
-const server = new Server(
-  { name: 'definitive-brain', version: '1.0.0' },
-  { capabilities: { tools: {}, prompts: {} } }  // prompts capability enabled
-)
+function createMcpServer() {
+  const server = new Server(
+    { name: 'definitive-brain', version: '1.0.0' },
+    { capabilities: { tools: {}, prompts: {} } }
+  )
 
 // ─── Prompts ──────────────────────────────────────────────────────────────────
 // These are loaded by Claude automatically on connect — no system prompt needed in config
@@ -476,6 +479,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 })
 
+  return server
+}
+
 // ─── HTTP Server ──────────────────────────────────────────────────────────────
 
 const app = express()
@@ -497,6 +503,7 @@ app.all('/mcp', async (req, res) => {
     if (req.method === 'POST' && !sessionId) {
       const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: () => randomUUID() })
       transport.onclose = () => { if (transport.sessionId) sessions.delete(transport.sessionId) }
+      const server = createMcpServer()
       await server.connect(transport)
       if (transport.sessionId) sessions.set(transport.sessionId, transport)
       await transport.handleRequest(req, res, req.body)
