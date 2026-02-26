@@ -502,11 +502,13 @@ app.all('/mcp', async (req, res) => {
     }
 
     if (req.method === 'POST' && !sessionId) {
-      const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: () => randomUUID() })
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: () => randomUUID(),
+        onsessioninitialized: (sid) => { sessions.set(sid, transport) }
+      })
       transport.onclose = () => { if (transport.sessionId) sessions.delete(transport.sessionId) }
       const server = createMcpServer()
       await server.connect(transport)
-      if (transport.sessionId) sessions.set(transport.sessionId, transport)
       await transport.handleRequest(req, res, req.body)
       return
     }
