@@ -486,23 +486,28 @@ app.get('/health', (_req, res) => res.json({ status: 'ok', tools: 12 }))
 const sessions = new Map()
 
 app.all('/mcp', async (req, res) => {
-  const sessionId = req.headers['mcp-session-id']
+  try {
+    const sessionId = req.headers['mcp-session-id']
 
-  if (sessionId && sessions.has(sessionId)) {
-    await sessions.get(sessionId).handleRequest(req, res, req.body)
-    return
+    if (sessionId && sessions.has(sessionId)) {
+      await sessions.get(sessionId).handleRequest(req, res, req.body)
+      return
+    }
+
+    if (req.method === 'POST' && !sessionId) {
+      const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: () => randomUUID() })
+      transport.onclose = () => { if (transport.sessionId) sessions.delete(transport.sessionId) }
+      await server.connect(transport)
+      if (transport.sessionId) sessions.set(transport.sessionId, transport)
+      await transport.handleRequest(req, res, req.body)
+      return
+    }
+
+    res.status(400).json({ error: 'Send POST /mcp to start a session' })
+  } catch (err) {
+    console.error('MCP route error:', err)
+    if (!res.headersSent) res.status(500).json({ error: err.message })
   }
-
-  if (req.method === 'POST' && !sessionId) {
-    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: () => randomUUID() })
-    transport.onclose = () => { if (transport.sessionId) sessions.delete(transport.sessionId) }
-    await server.connect(transport)
-    if (transport.sessionId) sessions.set(transport.sessionId, transport)
-    await transport.handleRequest(req, res, req.body)
-    return
-  }
-
-  res.status(400).json({ error: 'Send POST /mcp to start a session' })
 })
 
 const PORT = process.env.PORT || 3000
