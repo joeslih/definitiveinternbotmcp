@@ -204,12 +204,36 @@ for (const command of COMMANDS) {
   })
 }
 
+// Fetch thread messages and format them as context for Claude
+async function getThreadContext(slackClient, channel, threadTs, botUserId) {
+  try {
+    const response = await slackClient.conversations.replies({
+      channel,
+      ts: threadTs,
+      limit: 50
+    })
+    const messages = (response.messages || [])
+      .filter(m => m.ts !== threadTs || m.text) // include parent message
+      .map(m => {
+        const isBot = m.bot_id || m.user === botUserId
+        const sender = isBot ? 'Bot' : (m.username || m.user || 'User')
+        const text = (m.text || '').replace(/<@[A-Z0-9]+>/g, '').trim()
+        return text ? `${sender}: ${text}` : null
+      })
+      .filter(Boolean)
+    return messages.length > 1 ? messages.join('\n') : null
+  } catch {
+    return null
+  }
+}
+
 // @mentions
 app.event('app_mention', async ({ event, client }) => {
-  const text = event.text.replace(/<@[A-Z0-9]+>/g, '').trim()
-  if (!text) return
+  const userRequest = event.text.replace(/<@[A-Z0-9]+>/g, '').trim()
+  if (!userRequest) return
 
   const threadTs = event.thread_ts || event.ts
+  const isInThread = !!event.thread_ts
 
   const placeholder = await client.chat.postMessage({
     channel: event.channel,
@@ -219,7 +243,18 @@ app.event('app_mention', async ({ event, client }) => {
   })
 
   try {
-    const result = await handleRequest(text)
+    let prompt = userRequest
+
+    // If the mention is inside a thread, fetch the conversation history as context
+    if (isInThread) {
+      const authResponse = await client.auth.test()
+      const threadContext = await getThreadContext(client, event.channel, threadTs, authResponse.user_id)
+      if (threadContext) {
+        prompt = `Here is the Slack thread conversation for context:\n\n${threadContext}\n\n---\n\nUser request: ${userRequest}`
+      }
+    }
+
+    const result = await handleRequest(prompt)
     await updateAndOverflow(client, event.channel, placeholder.ts, result)
   } catch (err) {
     await client.chat.update({
