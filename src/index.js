@@ -293,6 +293,17 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
       name: 'skills',
       description: 'List all available Definitive Brain skills and how to use them. Call this when the user types /skills or /help or asks what you can do.',
       inputSchema: { type: 'object', properties: {} }
+    },
+    {
+      name: 'fetch_url',
+      description: 'Fetch the content of a URL and return it as plain text. Use this when a URL is mentioned in the conversation and the user wants to draft content based on it.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          url: { type: 'string', description: 'The URL to fetch' }
+        },
+        required: ['url']
+      }
     }
   ]
 }))
@@ -461,6 +472,23 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
       }
 
+      case 'fetch_url': {
+        const response = await fetch(args.url, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DefinitiveBrain/1.0)' }
+        })
+        if (!response.ok) return { content: [{ type: 'text', text: `Failed to fetch ${args.url}: HTTP ${response.status}` }] }
+        const html = await response.text()
+        // Strip tags, collapse whitespace, trim to 8000 chars
+        const text = html
+          .replace(/<script[\s\S]*?<\/script>/gi, '')
+          .replace(/<style[\s\S]*?<\/style>/gi, '')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 8000)
+        return { content: [{ type: 'text', text: `Content from ${args.url}:\n\n${text}` }] }
+      }
+
       case 'get_typefully_published': {
         const posts = await getTypefullyPublished()
         if (!posts?.length) return { content: [{ type: 'text', text: 'No recently published posts found.' }] }
@@ -487,7 +515,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 const app = express()
 app.use(express.json())
 
-app.get('/health', (_req, res) => res.json({ status: 'ok', tools: 12 }))
+app.get('/health', (_req, res) => res.json({ status: 'ok', tools: 13 }))
 
 const sessions = new Map()
 
