@@ -63,7 +63,7 @@ export async function getVoiceRules() {
 
 export async function getSavedPosts(saveReason) {
   const filter = saveReason
-    ? { property: 'Save Reason', rich_text: { contains: saveReason } }
+    ? { property: 'Save Reason', select: { equals: saveReason } }
     : undefined
 
   const response = await notion.databases.query({
@@ -77,11 +77,11 @@ export async function getSavedPosts(saveReason) {
     const props = page.properties
     return {
       text: getTitle(props['Post Text']),
-      postType: getSelect(props['Post Type']),
+      postType: getText(props['Post Type']),
       impressions: getNumber(props.Impressions),
       likes: getNumber(props.Likes),
       retweets: getNumber(props.Retweets),
-      whyItWorked: getText(props['Why It Worked']),
+      whyItWorked: getText(props['Notes']),
       saveReason: getText(props['Save Reason'])
     }
   })
@@ -128,7 +128,7 @@ export async function buildBrandContext(brandName) {
     topPosts.slice(0, 3).forEach(p => {
       ctx += `---\n"${p.text}"\n`
       ctx += `${p.impressions?.toLocaleString()} impressions | ${p.likes} likes | ${p.retweets} RTs\n`
-      ctx += `Why it worked: ${p.whyItWorked}\n`
+      ctx += `Notes: ${p.whyItWorked}\n`
     })
   }
 
@@ -150,14 +150,14 @@ export async function savePost({ text, brand, postType, impressions, likes, retw
     parent: { database_id: process.env.NOTION_SAVED_POSTS_DB },
     properties: {
       'Post Text': { title: [{ text: { content: text } }] },
-      'Brand': { select: { name: brand } },
+      'Brand': { rich_text: [{ text: { content: brand || '' } }] },
       'Post Type': { rich_text: [{ text: { content: postType || '' } }] },
       'Impressions': { number: impressions || 0 },
       'Likes': { number: likes || 0 },
       'Retweets': { number: retweets || 0 },
-      'Why It Worked': { rich_text: [{ text: { content: whyItWorked || '' } }] },
+      'Notes': { rich_text: [{ text: { content: whyItWorked || '' } }] },
       'URL': { rich_text: [{ text: { content: url || '' } }] },
-      'Save Reason': { rich_text: [{ text: { content: saveReason || 'Reference' } }] },
+      'Save Reason': { select: { name: saveReason || 'Top Performer' } },
       ...(postDate && { 'Date': { date: { start: postDate } } })
     }
   })

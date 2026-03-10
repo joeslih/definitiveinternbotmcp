@@ -163,7 +163,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           url: { type: 'string' },
           save_reason: {
             type: 'string',
-            enum: ['Top Performer', 'Avoid', 'Reference', 'Voice Example']
+            enum: ['Top Performer', 'Avoid']
           },
           post_date: { type: 'string', description: 'ISO 8601 date the post was published e.g. "2026-02-24"' }
         },
