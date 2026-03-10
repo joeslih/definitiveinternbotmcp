@@ -84,7 +84,7 @@ Generate post copy in Definitive's brand voice.
 **/save [post text]**
 Save a post or finding to the Notion brain.
 1. If a URL is provided, extract the post ID and call \`get_x_post_metrics\` first to get real impressions/likes/RTs
-2. Infer why_it_worked from the content and metrics — write a concise read on why it performed well or poorly — do not ask the user
+2. Infer notes from the content and metrics — write a concise read on why it performed well or poorly — do not ask the user
 3. Only ask the user for save_reason if it's not obvious from context (Top Performer vs Avoid)
 4. Call \`save_post_to_notion\` with all available info
 5. Confirm saved
@@ -160,7 +160,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           impressions: { type: 'number' },
           likes: { type: 'number' },
           retweets: { type: 'number' },
-          why_it_worked: { type: 'string' },
+          notes: { type: 'string' },
           url: { type: 'string' },
           save_reason: {
             type: 'string',
@@ -291,7 +291,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           impressions: args.impressions,
           likes: args.likes,
           retweets: args.retweets,
-          whyItWorked: args.why_it_worked,
+          notes: args.notes,
           url: args.url,
           saveReason: args.save_reason,
           postDate: args.post_date
