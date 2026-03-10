@@ -93,11 +93,10 @@ const CACHE_TTL_MS = 10 * 60 * 1000 // 10 minutes
 export async function buildBrandContext(brandName) {
   const cached = brandContextCache.get(brandName)
   if (cached && Date.now() < cached.expiresAt) return cached.data
-  const [profile, voiceRules, topPosts, avoidPosts] = await Promise.all([
+  const [profile, voiceRules, savedPosts] = await Promise.all([
     getBrandProfile(brandName),
     getVoiceRules(),
-    getSavedPosts('Top Performer'),
-    getSavedPosts('Avoid')
+    getSavedPosts()
   ])
 
   if (!profile) return null
@@ -120,19 +119,12 @@ export async function buildBrandContext(brandName) {
     if (r.correct) ctx += `  ✓ Instead: "${r.correct}"\n`
   })
 
-  if (topPosts.length) {
-    ctx += `\n## Top Performing Posts\n`
-    topPosts.slice(0, 3).forEach(p => {
-      ctx += `---\n"${p.text}"\n`
+  if (savedPosts.length) {
+    ctx += `\n## Saved Posts\n`
+    savedPosts.forEach(p => {
+      ctx += `---\n[${p.saveReason}] "${p.text}"\n`
       ctx += `${p.impressions?.toLocaleString()} impressions | ${p.likes} likes | ${p.retweets} RTs\n`
-      ctx += `Notes: ${p.whyItWorked}\n`
-    })
-  }
-
-  if (avoidPosts.length) {
-    ctx += `\n## Underperforming Patterns (avoid)\n`
-    avoidPosts.forEach(p => {
-      ctx += `- "${p.text}" — ${p.whyItWorked}\n`
+      if (p.whyItWorked) ctx += `Notes: ${p.whyItWorked}\n`
     })
   }
 
