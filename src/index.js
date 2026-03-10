@@ -417,6 +417,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'fetch_url': {
+        // X/Twitter URLs — use the API instead of HTTP fetch (X requires JS + auth)
+        const xMatch = args.url.match(/(?:twitter|x)\.com\/\w+\/status\/(\d+)/)
+        if (xMatch) {
+          const posts = await getPostMetrics([xMatch[1]])
+          if (!posts.length) return { content: [{ type: 'text', text: `Could not fetch post from ${args.url}.` }] }
+          const p = posts[0]
+          return {
+            content: [{
+              type: 'text',
+              text: `X post from ${args.url}:\n\n"${p.text}"\n\nImpressions: ${p.impressions.toLocaleString()} | Likes: ${p.likes} | RTs: ${p.retweets} | Replies: ${p.replies}`
+            }]
+          }
+        }
+
         const response = await fetch(args.url, {
           headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DefinitiveBrain/1.0)' }
         })
