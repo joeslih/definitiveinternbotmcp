@@ -29,8 +29,6 @@ export async function getBrandProfile(brandName) {
   return {
     name: getTitle(props.Name),
     handle: getText(props['X Handle']),
-    industry: getSelect(props.Industry),
-    followerCount: getNumber(props['Follower Count']),
     contentPillars: getText(props['Content Pillars']),
     audienceDescription: getText(props['Audience Description']),
     notes: getText(props.Notes)
@@ -105,7 +103,6 @@ export async function buildBrandContext(brandName) {
   if (!profile) return null
 
   let ctx = `## Brand: ${profile.name} (${profile.handle})\n`
-  ctx += `Industry: ${profile.industry} | Followers: ${profile.followerCount?.toLocaleString()}\n`
   ctx += `Content Pillars: ${profile.contentPillars}\n`
   ctx += `Audience: ${profile.audienceDescription}\n`
   if (profile.notes) ctx += `Notes: ${profile.notes}\n`
