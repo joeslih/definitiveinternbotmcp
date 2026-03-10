@@ -121,7 +121,7 @@ async function runClaudeWithTools(userMessage, client, allowedTools = null) {
         try {
           const result = await client.callTool({ name: toolUse.name, arguments: toolUse.input })
           const text = result.content.filter(c => c.type === 'text').map(c => c.text).join('\n')
-          return { type: 'tool_result', tool_use_id: toolUse.id, content: text }
+          return { type: 'tool_result', tool_use_id: toolUse.id, content: text, ...(result.isError && { is_error: true }) }
         } catch (err) {
           return { type: 'tool_result', tool_use_id: toolUse.id, content: `Error: ${err.message}`, is_error: true }
         }
