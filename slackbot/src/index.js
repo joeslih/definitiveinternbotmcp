@@ -35,6 +35,7 @@ async function createMcpClientWithRetry(maxAttempts = 3) {
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
+// Fallback used only if the MCP server prompt is unreachable
 const SYSTEM_PROMPT = `You are a content strategist assistant for Definitive, a DeFi trading platform on Base and Solana.
 
 You have access to the Definitive Brain MCP — a set of tools connected to Notion (brand knowledge), X API (real data), and Typefully (scheduling).
@@ -70,8 +71,20 @@ const TOOL_ROUTES = {
   '/skills':   ['skills'],
 }
 
+async function getSystemPrompt(client) {
+  try {
+    const result = await client.getPrompt('definitive-brain-instructions', {})
+    return result.messages[0].content.text
+  } catch {
+    return SYSTEM_PROMPT
+  }
+}
+
 async function runClaudeWithTools(userMessage, client, allowedTools = null) {
-  const { tools: mcpTools } = await client.listTools()
+  const [{ tools: mcpTools }, systemPrompt] = await Promise.all([
+    client.listTools(),
+    getSystemPrompt(client)
+  ])
   const filtered = allowedTools
     ? mcpTools.filter(t => allowedTools.includes(t.name))
     : mcpTools
@@ -91,7 +104,7 @@ async function runClaudeWithTools(userMessage, client, allowedTools = null) {
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 4096,
-      system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+      system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
       tools,
       messages
     })

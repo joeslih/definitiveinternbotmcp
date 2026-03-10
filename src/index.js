@@ -93,19 +93,9 @@ Save a post or finding to the Notion brain.
 ---
 
 **/schedule [post text]**
-Send copy directly to Typefully.
-1. Confirm the copy with the user before sending
-2. Ask if they want to schedule a specific time or save to queue
-3. Call \`create_typefully_draft\` with the content and optional schedule_date
-4. Confirm draft created
-
----
-
-**/queue**
-Show what's currently scheduled in Typefully.
-1. Call \`get_typefully_scheduled\`
-2. Display scheduled posts in chronological order
-3. Note any gaps or clustering
+Send copy directly to Typefully queue — no confirmation needed.
+1. Call \`create_typefully_draft\` immediately with the post text, no schedule_date
+2. Confirm draft created
 
 ---
 
@@ -116,7 +106,6 @@ List all available skills with a one-line description of each.
 
 ## Always-on rules
 - Always call \`get_brand_context\` before drafting — never generate copy without it
-- Never send to Typefully without explicit user confirmation
 - Never save to Notion without confirming the details first
 - If the user asks something outside these skills, answer normally`
 
@@ -463,9 +452,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 **/save [post]** — Save a post or finding to the Notion brain.
 
-**/schedule [post]** — Send copy to Typefully after confirmation. Add \`| date:2026-03-01T09:00:00Z\` to schedule a specific time.
-
-**/queue** — Show what's currently scheduled in Typefully.
+**/schedule [post]** — Send copy directly to Typefully queue, no confirmation needed.
 
 **/skills** — Show this menu.`
           }]
