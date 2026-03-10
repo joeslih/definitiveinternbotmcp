@@ -65,7 +65,7 @@ Always on rules:
 const TOOL_ROUTES = {
   '/morning':  ['analyze_trends', 'get_brand_context'],
   '/audit':    ['audit_x_profile'],
-  '/draft':    ['get_brand_context', 'get_saved_posts', 'fetch_url'],
+  '/draft':    ['get_brand_context', 'fetch_url'],
   '/save':     ['save_post_to_notion'],
   '/schedule': ['create_typefully_draft'],
   '/skills':   ['skills'],
@@ -279,7 +279,8 @@ app.event('app_mention', async ({ event, client }) => {
       }
     }
 
-    const result = await handleRequest(prompt)
+    const command = userRequest.startsWith('/') ? userRequest.split(' ')[0] : null
+    const result = await handleRequest(prompt, command)
     await updateAndOverflow(client, event.channel, placeholder.ts, result)
   } catch (err) {
     await client.chat.update({
