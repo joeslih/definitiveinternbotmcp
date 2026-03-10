@@ -76,7 +76,7 @@ Generate post copy in Definitive's brand voice.
 1. If thread context is provided, use it as the topic — no need for the user to restate it
 2. Call \`get_brand_context\` with brand_name "Definitive"
 3. Generate 3 post variants following all voice rules
-4. Label each variant with the approach Claude chose
+4. Label each variant with the approach Claude chose — no rationale, no "why it fits" section, no additional commentary after the variants
 
 ---
 
