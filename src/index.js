@@ -84,8 +84,11 @@ Generate post copy in Definitive's brand voice.
 **/save [post text]**
 Save a post or finding to the Notion brain.
 1. If a URL is provided, extract the post ID and call \`get_x_post_metrics\` first to get real impressions/likes/RTs
-2. Call \`save_post_to_notion\` with all available info — infer brand from the X handle, fill optional fields with what you know, leave the rest empty
-3. Confirm saved
+2. Infer post_type from the content (e.g. Thread, Product Feature, Value Prop, Announcement, Social Proof) — do not ask the user
+3. Infer why_it_worked from the content and metrics — write a concise read on why it performed well or poorly — do not ask the user
+4. Only ask the user for save_reason if it's not obvious from context (Top Performer vs Avoid)
+5. Call \`save_post_to_notion\` with all available info
+6. Confirm saved
 
 ---
 
