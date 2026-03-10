@@ -33,7 +33,6 @@ export async function getBrandProfile(brandName) {
     followerCount: getNumber(props['Follower Count']),
     contentPillars: getText(props['Content Pillars']),
     audienceDescription: getText(props['Audience Description']),
-    postingFrequency: getSelect(props['Posting Frequency']),
     notes: getText(props.Notes)
   }
 }
