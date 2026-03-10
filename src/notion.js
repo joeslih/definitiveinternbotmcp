@@ -134,13 +134,12 @@ export async function buildBrandContext(brandName) {
 
 // ─── Save Post to Notion ──────────────────────────────────────────────────────
 
-export async function savePost({ text, brand, postType, impressions, likes, retweets, whyItWorked, url, saveReason, postDate }) {
+export async function savePost({ text, brand, impressions, likes, retweets, whyItWorked, url, saveReason, postDate }) {
   await notion.pages.create({
     parent: { database_id: process.env.NOTION_SAVED_POSTS_DB },
     properties: {
       'Post Text': { title: [{ text: { content: text } }] },
       'Brand': { rich_text: [{ text: { content: brand || '' } }] },
-      'Post Type': { rich_text: [{ text: { content: postType || '' } }] },
       'Impressions': { number: impressions || 0 },
       'Likes': { number: likes || 0 },
       'Retweets': { number: retweets || 0 },
