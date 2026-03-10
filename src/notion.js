@@ -75,12 +75,12 @@ export async function getSavedPosts(saveReason) {
     const props = page.properties
     return {
       text: getTitle(props['Post Text']),
-      postType: getText(props['Post Type']),
+      brand: getText(props['Brand']),
       impressions: getNumber(props.Impressions),
       likes: getNumber(props.Likes),
       retweets: getNumber(props.Retweets),
       whyItWorked: getText(props['Notes']),
-      saveReason: getText(props['Save Reason'])
+      saveReason: getSelect(props['Save Reason'])
     }
   })
 }
@@ -122,7 +122,7 @@ export async function buildBrandContext(brandName) {
   if (savedPosts.length) {
     ctx += `\n## Saved Posts\n`
     savedPosts.forEach(p => {
-      ctx += `---\n[${p.saveReason}] "${p.text}"\n`
+      ctx += `---\n[${p.saveReason}]${p.brand ? ` ${p.brand}` : ''} "${p.text}"\n`
       ctx += `${p.impressions?.toLocaleString()} impressions | ${p.likes} likes | ${p.retweets} RTs\n`
       if (p.whyItWorked) ctx += `Notes: ${p.whyItWorked}\n`
     })
