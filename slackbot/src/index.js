@@ -66,7 +66,7 @@ const TOOL_ROUTES = {
   '/morning':  ['analyze_trends', 'get_brand_context'],
   '/audit':    ['audit_x_profile'],
   '/draft':    ['get_brand_context', 'fetch_url'],
-  '/save':     ['save_post_to_notion'],
+  '/save':     ['save_post_to_notion', 'get_x_post_metrics'],
   '/schedule': ['create_typefully_draft'],
   '/skills':   ['skills'],
 }

@@ -90,7 +90,12 @@ export async function getSavedPosts(saveReason) {
 
 // ─── Full Brand Context ───────────────────────────────────────────────────────
 
+const brandContextCache = new Map()
+const CACHE_TTL_MS = 10 * 60 * 1000 // 10 minutes
+
 export async function buildBrandContext(brandName) {
+  const cached = brandContextCache.get(brandName)
+  if (cached && Date.now() < cached.expiresAt) return cached.data
   const [profile, voiceRules, topPosts, avoidPosts] = await Promise.all([
     getBrandProfile(brandName),
     getVoiceRules(),
@@ -135,6 +140,7 @@ export async function buildBrandContext(brandName) {
     })
   }
 
+  brandContextCache.set(brandName, { data: ctx, expiresAt: Date.now() + CACHE_TTL_MS })
   return ctx
 }
 

@@ -10,7 +10,7 @@ import {
   ListPromptsRequestSchema,
   GetPromptRequestSchema
 } from '@modelcontextprotocol/sdk/types.js'
-import { buildBrandContext, getBrandProfile, getSavedPosts, savePost } from './notion.js'
+import { buildBrandContext, savePost } from './notion.js'
 import { createTypefullyDraft, getTypefullyScheduled, getTypefullyPublished } from './typefully.js'
 import { getUserPosts, searchPosts, getPostMetrics, getUSTrends } from './x.js'
 
@@ -83,15 +83,17 @@ Generate post copy in Definitive's brand voice.
 
 **/save [post text]**
 Save a post or finding to the Notion brain.
-1. Call \`save_post_to_notion\` immediately using whatever info is available — infer brand from context, fill optional fields with what you know, leave the rest empty
-2. Confirm saved
+1. If a URL is provided, extract the post ID and call \`get_x_post_metrics\` first to get real impressions/likes/RTs
+2. Call \`save_post_to_notion\` with all available info — infer brand from the X handle, fill optional fields with what you know, leave the rest empty
+3. Confirm saved
 
 ---
 
 **/schedule [post text]**
 Send copy directly to Typefully queue — no confirmation needed.
-1. Call \`create_typefully_draft\` immediately with the post text, no schedule_date
-2. Confirm draft created
+1. If the user includes a time with a timezone (e.g. "tomorrow at 7:30am PT"), convert it to UTC and pass as schedule_date. If a time is given without a timezone, ask for the timezone before proceeding.
+2. Call \`create_typefully_draft\` immediately with the post text
+3. Confirm draft created with scheduled time if applicable
 
 ---
 
@@ -136,7 +138,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 
     {
       name: 'get_brand_context',
-      description: 'Load full brand context from Notion — profile, voice rules, top posts, patterns to avoid. Always call this before drafting.',
+      description: 'Load full brand context from Notion — profile, voice rules, top posts, patterns to avoid.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -146,38 +148,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
       }
     },
     {
-      name: 'get_brand_profile',
-      description: 'Get basic profile info for a brand — handle, followers, pillars, audience.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          brand_name: { type: 'string' }
-        },
-        required: ['brand_name']
-      }
-    },
-    {
-      name: 'get_saved_posts',
-      description: 'Retrieve saved posts from Notion filtered by save reason. Use to find examples before drafting.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          save_reason: {
-            type: 'string',
-            enum: ['Top Performer', 'Avoid', 'Reference', 'Voice Example']
-          }
-        }
-      }
-    },
-    {
       name: 'save_post_to_notion',
       description: 'Save a post or finding to Notion for future reference.',
       inputSchema: {
         type: 'object',
         properties: {
           text: { type: 'string' },
-          brand: { type: 'string' },
-          post_type: { type: 'string', description: 'Leaderboard Drama, Educational, CTA, Community, Prize Update, AMA' },
+          brand: { type: 'string', description: 'The X handle of the account — e.g. "@DefinitiveFi"' },
+          post_type: { type: 'string', description: 'Infer the post format from the content' },
           impressions: { type: 'number' },
           likes: { type: 'number' },
           retweets: { type: 'number' },
@@ -197,13 +175,13 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 
     {
       name: 'analyze_trends',
-      description: 'Morning content intelligence tool. Fetches current US trending topics from X, pulls top posts for each relevant trend, then scores every trend against the brand\'s content pillars and returns ranked opportunities with suggested draft angles. Run this daily before planning content.',
+      description: 'Fetches current US trending topics from X with top posts per trend, scored against a brand\'s content pillars. Returns ranked opportunities with draft angles.',
       inputSchema: {
         type: 'object',
         properties: {
           brand_name: { type: 'string', description: 'Brand to score trends against e.g. "Definitive"' },
-          trend_limit: { type: 'number', description: 'How many US trends to fetch. Default 20.' },
-          posts_per_trend: { type: 'number', description: 'Top posts to fetch per trend. Default 3.' }
+          trend_limit: { type: 'number', description: 'How many US trends to fetch.' },
+          posts_per_trend: { type: 'number', description: 'Top posts to fetch per trend.' }
         },
         required: ['brand_name']
       }
@@ -215,7 +193,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         type: 'object',
         properties: {
           handle: { type: 'string', description: 'X handle e.g. "@DefinitiveFi"' },
-          count: { type: 'number', description: 'Number of posts to fetch. Default 20, max 100.' }
+          count: { type: 'number', description: 'Number of posts to fetch.' }
         },
         required: ['handle']
       }
@@ -234,7 +212,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'get_x_post_metrics',
-      description: 'Get current engagement metrics for specific post IDs.',
+      description: 'Get current engagement metrics for specific post IDs. Extract the post ID from an X URL (the number after /status/).',
       inputSchema: {
         type: 'object',
         properties: {
@@ -252,20 +230,19 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
 
     {
       name: 'create_typefully_draft',
-      description: 'Send approved post copy to Typefully as a draft. Only call after the user confirms they are happy with the copy.',
+      description: 'Send post copy to Typefully as a draft.',
       inputSchema: {
         type: 'object',
         properties: {
           content: { type: 'string', description: 'Post content. Use \\n\\n between thread tweets.' },
-          schedule_date: { type: 'string', description: 'ISO 8601 datetime e.g. "2026-03-01T09:00:00Z". Leave empty to save to queue.' },
-          threadify: { type: 'boolean', description: 'Auto-split into thread. Default false.' }
+          schedule_date: { type: 'string', description: 'ISO 8601 datetime in UTC. Convert natural language input (e.g. "tomorrow at 7:30am PT") to UTC before passing. If the user gives a time without a timezone, ask them to specify one before calling this tool. Leave empty to save to queue.' }
         },
         required: ['content']
       }
     },
     {
       name: 'get_typefully_scheduled',
-      description: 'Get all scheduled drafts in Typefully. Check before creating posts to avoid duplicate topics.',
+      description: 'Get all scheduled drafts in Typefully.',
       inputSchema: { type: 'object', properties: {} }
     },
     {
@@ -280,7 +257,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     },
     {
       name: 'fetch_url',
-      description: 'Fetch the content of a URL and return it as plain text. Use this when a URL is mentioned in the conversation and the user wants to draft content based on it.',
+      description: 'Fetch the content of a URL and return it as plain text. Use when the user shares a link and wants to draft a post based on it.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -304,21 +281,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const context = await buildBrandContext(args.brand_name)
         if (!context) return { content: [{ type: 'text', text: `No brand profile found for "${args.brand_name}".` }] }
         return { content: [{ type: 'text', text: context }] }
-      }
-
-      case 'get_brand_profile': {
-        const profile = await getBrandProfile(args.brand_name)
-        if (!profile) return { content: [{ type: 'text', text: `No profile found for "${args.brand_name}".` }] }
-        return { content: [{ type: 'text', text: JSON.stringify(profile, null, 2) }] }
-      }
-
-      case 'get_saved_posts': {
-        const posts = await getSavedPosts(args.save_reason)
-        if (!posts.length) return { content: [{ type: 'text', text: 'No posts found.' }] }
-        const formatted = posts.map(p =>
-          `[${p.postType} | ${p.impressions?.toLocaleString()} impressions | ${p.likes} likes]\n"${p.text}"\nWhy it worked: ${p.whyItWorked}`
-        ).join('\n\n---\n\n')
-        return { content: [{ type: 'text', text: formatted }] }
       }
 
       case 'save_post_to_notion': {
