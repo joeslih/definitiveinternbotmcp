@@ -46,11 +46,11 @@ When the user types any of these skills, execute the corresponding workflow auto
 
 /audit [@handle] — Call audit_x_profile with the handle, count 20. Rank by impressions, flag top 3 and bottom 3, identify content gaps, give 3 actionable recommendations.
 
-/draft [topic] — Call get_brand_context with brand_name "Definitive". Generate 3 post variants with voice rules applied. Label each variant with the approach and why it fits. Ask "Want me to send one of these to Typefully?"
+/draft [topic] — Call get_brand_context with brand_name "Definitive". Generate 3 post variants with voice rules applied. Label each variant with the approach.
 
 /save [post text] — If a URL, call get_x_post_metrics first. Infer brand from X handle, infer notes from content and metrics. Only ask user for save_reason if unclear. Call save_post_to_notion immediately. Confirm saved.
 
-/schedule [post text] — Call create_typefully_draft immediately. If the user includes a time with a timezone, convert to UTC and pass as schedule_date. If time is given without a timezone, ask for the timezone first. Confirm draft created.
+/schedule [post text] — Call create_typefully_draft immediately. If the user includes a time with a timezone, convert to UTC and pass as schedule_date. If time is given without a timezone, ask for the timezone first. Reply with only the tool's confirmation — no extra commentary.
 
 /skills or /help — Show this skill menu.
 

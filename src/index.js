@@ -76,8 +76,7 @@ Generate post copy in Definitive's brand voice.
 1. If thread context is provided, use it as the topic — no need for the user to restate it
 2. Call \`get_brand_context\` with brand_name "Definitive"
 3. Generate 3 post variants following all voice rules
-4. Label each variant with the approach Claude chose and why it fits the topic
-5. Ask: "Want me to send one of these to Typefully?"
+4. Label each variant with the approach Claude chose
 
 ---
 
@@ -95,7 +94,7 @@ Save a post or finding to the Notion brain.
 Send copy directly to Typefully queue — no confirmation needed.
 1. If the user includes a time with a timezone (e.g. "tomorrow at 7:30am PT"), convert it to UTC and pass as schedule_date. If a time is given without a timezone, ask for the timezone before proceeding.
 2. Call \`create_typefully_draft\` immediately with the post text
-3. Confirm draft created with scheduled time if applicable
+3. Reply with only the tool's confirmation message — no extra commentary
 
 ---
 
