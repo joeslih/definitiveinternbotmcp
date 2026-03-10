@@ -61,9 +61,21 @@ Always on rules:
 - Never save to Notion without confirming details first
 - If the user asks something outside these skills, answer normally`
 
-async function runClaudeWithTools(userMessage, client) {
+const TOOL_ROUTES = {
+  '/morning':  ['analyze_trends', 'get_brand_context'],
+  '/audit':    ['audit_x_profile'],
+  '/draft':    ['get_brand_context', 'get_saved_posts', 'fetch_url'],
+  '/save':     ['save_post_to_notion'],
+  '/schedule': ['create_typefully_draft'],
+  '/skills':   ['skills'],
+}
+
+async function runClaudeWithTools(userMessage, client, allowedTools = null) {
   const { tools: mcpTools } = await client.listTools()
-  const tools = mcpTools.map(t => ({
+  const filtered = allowedTools
+    ? mcpTools.filter(t => allowedTools.includes(t.name))
+    : mcpTools
+  const tools = filtered.map(t => ({
     name: t.name,
     description: t.description,
     input_schema: t.inputSchema
@@ -79,7 +91,7 @@ async function runClaudeWithTools(userMessage, client) {
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 4096,
-      system: SYSTEM_PROMPT,
+      system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
       tools,
       messages
     })
@@ -113,10 +125,11 @@ async function runClaudeWithTools(userMessage, client) {
   return 'Error: tool loop exceeded maximum iterations. Please try again.'
 }
 
-async function handleRequest(userMessage) {
+async function handleRequest(userMessage, command = null) {
   const client = await createMcpClientWithRetry()
   try {
-    return await runClaudeWithTools(userMessage, client)
+    const allowedTools = command ? (TOOL_ROUTES[command] ?? null) : null
+    return await runClaudeWithTools(userMessage, client, allowedTools)
   } finally {
     await client.close()
   }
@@ -191,7 +204,7 @@ for (const command of COMMANDS) {
 
     try {
       const prompt = buildPromptFromCommand(cmd.command, cmd.text)
-      const result = await handleRequest(prompt)
+      const result = await handleRequest(prompt, cmd.command)
       await updateAndOverflow(client, cmd.channel_id, placeholder.ts, result)
     } catch (err) {
       await client.chat.update({
