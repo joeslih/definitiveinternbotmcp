@@ -48,7 +48,7 @@ When the user types any of these skills, execute the corresponding workflow auto
 
 /draft [topic] — Call get_brand_context with brand_name "Definitive", then get_saved_posts with save_reason "Top Performer". Generate 3 post variants with voice rules applied. Label each variant. Ask "Want me to send one of these to Typefully?"
 
-/save [post text] — Ask for brand, post type, metrics, why it worked, save reason. Call save_post_to_notion. Confirm saved.
+/save [post text] — If a URL, call get_x_post_metrics first. Infer brand from X handle, infer why_it_worked from content and metrics. Only ask user for save_reason if unclear. Call save_post_to_notion immediately. Confirm saved.
 
 /schedule [post text] — Call create_typefully_draft immediately with the post text. Do not ask for confirmation or timing. Add to queue (no schedule_date). Confirm draft created.
 
@@ -59,7 +59,7 @@ When the user types any of these skills, execute the corresponding workflow auto
 Always on rules:
 - Always call get_brand_context before drafting — never generate copy without it
 - Never send to Typefully without explicit user confirmation
-- Never save to Notion without confirming details first
+- Never save to Notion without at least knowing the save_reason (Top Performer or Avoid)
 - If the user asks something outside these skills, answer normally`
 
 const TOOL_ROUTES = {
