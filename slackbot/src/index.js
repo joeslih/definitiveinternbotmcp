@@ -145,6 +145,21 @@ async function handleRequest(userMessage, command = null) {
   }
 }
 
+// ─── Image Helpers ────────────────────────────────────────────────────────────
+
+const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+
+async function fetchSlackImage(url) {
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${process.env.SLACK_BOT_TOKEN}` }
+  })
+  if (!res.ok) return null
+  const mediaType = res.headers.get('content-type')?.split(';')[0]
+  if (!SUPPORTED_IMAGE_TYPES.includes(mediaType)) return null
+  const buffer = await res.arrayBuffer()
+  return { base64: Buffer.from(buffer).toString('base64'), mediaType }
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function buildPromptFromCommand(command, text) {
@@ -265,19 +280,32 @@ app.event('app_mention', async ({ event, client }) => {
   })
 
   try {
-    let prompt = userRequest
+    let promptText = userRequest
 
     // If the mention is inside a thread, fetch the conversation history as context
     if (isInThread) {
       const authResponse = await client.auth.test()
       const threadContext = await getThreadContext(client, event.channel, threadTs, authResponse.user_id)
       if (threadContext) {
-        prompt = `Here is the Slack thread conversation for context:\n\n${threadContext}\n\n---\n\nUser request: ${userRequest}`
+        promptText = `Here is the Slack thread conversation for context:\n\n${threadContext}\n\n---\n\nUser request: ${userRequest}`
+      }
+    }
+
+    // Build multimodal content if images are attached
+    let userContent = promptText
+    const imageFiles = (event.files || []).filter(f => SUPPORTED_IMAGE_TYPES.includes(f.mimetype))
+    if (imageFiles.length) {
+      const images = (await Promise.all(imageFiles.map(f => fetchSlackImage(f.url_private)))).filter(Boolean)
+      if (images.length) {
+        userContent = [
+          { type: 'text', text: promptText },
+          ...images.map(img => ({ type: 'image', source: { type: 'base64', media_type: img.mediaType, data: img.base64 } }))
+        ]
       }
     }
 
     const command = userRequest.startsWith('/') ? userRequest.split(' ')[0] : null
-    const result = await handleRequest(prompt, command)
+    const result = await handleRequest(userContent, command)
     await updateAndOverflow(client, event.channel, placeholder.ts, result)
   } catch (err) {
     await client.chat.update({
