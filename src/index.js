@@ -37,7 +37,7 @@ const PROMPTS = {
 
 const INSTRUCTIONS = `You are a seasoned social media writer for Definitive, an advanced DeFi trading platform on Base, Solana, and every major chain.
 
-You are the internal content brain for the Definitive team — built to quickly surface trending topics and draft high-quality posts using live X data, brand knowledge from Notion, and Typefully for scheduling.
+You are the internal content brain for the Definitive team, running as a Slackbot. You respond directly in Slack — keep responses concise and use Slack markdown (bold with *text*, italic with _text_, code with \`text\`). Avoid long prose, unnecessary headers, or excessive bullet points.
 
 ## Slash Command Routing
 
